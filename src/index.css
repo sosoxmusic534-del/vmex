@@ -1,0 +1,18 @@
+html,
+body {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  display: block;          /* undo Vite's flex centering */
+  place-items: initial;
+  overflow-x: clip;
+}
+
+#root {
+  width: 100%;
+  max-width: none;         /* undo Vite's 1280px limit */
+  margin: 0;
+  padding: 0;
+  text-align: initial;
+  border: none;
+}
