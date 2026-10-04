@@ -178,6 +178,11 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_ticket_messages_ticket ON ticket_messages(ticket_id);
 `);
 
+/* Extra ticket columns used by routes/tickets.js */
+if (!hasCol("tickets", "priority")) {
+  db.exec("ALTER TABLE tickets ADD COLUMN priority TEXT NOT NULL DEFAULT 'normal'");
+}
+
 /* ---------- Starter data (only inserted once) ---------- */
 const seed = db.prepare(
   "INSERT OR IGNORE INTO plans (slug, name, description, protocols, price, data_gb, days) VALUES (?, ?, ?, ?, ?, ?, ?)"
