@@ -26,6 +26,36 @@ app.use("/api/admin/tickets", adminTickets);
 app.use("/api/admin", adminRoutes);
 app.use("/api/files", filesRoutes);
 
+/* ---------- robots.txt & sitemap.xml (per domain) ---------- */
+const LIVE_HOSTS = ["vmex.net", "www.vmex.net"];
+const isLiveHost = (req) => LIVE_HOSTS.includes(String(req.hostname).toLowerCase());
+
+app.get("/robots.txt", (req, res) => {
+  res.type("text/plain");
+  if (!isLiveHost(req)) return res.send("User-agent: *\nDisallow: /\n");
+  res.send(
+    "User-agent: *\nAllow: /\nDisallow: /portal\nDisallow: /api/\n\nSitemap: https://vmex.net/sitemap.xml\n"
+  );
+});
+
+app.get("/sitemap.xml", (req, res) => {
+  if (!isLiveHost(req)) return res.status(404).type("text/plain").send("Not found");
+  const pages = [
+    ["/", "1.0", "weekly"],
+    ["/about", "0.7", "monthly"],
+    ["/terms", "0.3", "yearly"],
+    ["/privacy", "0.3", "yearly"],
+    ["/refund", "0.3", "yearly"],
+  ];
+  res.type("application/xml").send(
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+      pages
+        .map(([p, pr, f]) => `  <url><loc>https://vmex.net${p}</loc><changefreq>${f}</changefreq><priority>${pr}</priority></url>`)
+        .join("\n") +
+      `\n</urlset>\n`
+  );
+});
+
 /* ---------- Serve the built React site (production) ---------- */
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST = path.join(__dirname, "..", "dist");

@@ -37,6 +37,7 @@ import Cta from "./components/Cta";
 import Footer from "./components/Footer";
 import Preloader from "./components/Preloader";
 import ScrollManager from "./components/ScrollManager";
+import RouteMeta from "./components/RouteMeta";
 
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
@@ -90,6 +91,7 @@ export default function App() {
       <Preloader done={loaded} />
       <PortalTransition />
       <ScrollManager />
+      <RouteMeta />
 
       {!isPortal && <Navbar />}
 
