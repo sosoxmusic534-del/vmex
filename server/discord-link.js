@@ -10,7 +10,8 @@ export const REDIRECT_URI = `${PUBLIC_URL}/api/discord/callback`;
 export const discordConfigured = Boolean(DISCORD_CLIENT_ID && DISCORD_CLIENT_SECRET && PUBLIC_URL);
 
 const BASIC_SCOPES = "identify role_connections.write";
-const PRESENCE_SCOPES = "identify role_connections.write openid sdk.social_layer_presence";
+const PRESENCE_SCOPES =
+  process.env.DISCORD_PRESENCE_SCOPES || "identify role_connections.write sdk.social_layer_presence";
 
 /* ---------- Encrypt tokens at rest ---------- */
 const KEY = crypto.createHash("sha256").update(`discord:${process.env.JWT_SECRET}`).digest();
