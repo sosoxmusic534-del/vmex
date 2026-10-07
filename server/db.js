@@ -75,6 +75,18 @@ db.exec(`
   );
 `);
 
+/* Discord status (headless presence) */
+for (const [col, type] of Object.entries({
+  scopes: "TEXT",
+  presence_enabled: "INTEGER NOT NULL DEFAULT 0",
+  hs_token: "TEXT",
+  hs_started_at: "INTEGER",
+  hs_updated_at: "INTEGER",
+  hs_key: "TEXT",
+})) {
+  if (!hasCol("discord_links", col)) db.exec(`ALTER TABLE discord_links ADD COLUMN ${col} ${type}`);
+}
+
 /* Helper: does a column exist? */
 const hasCol = (table, col) =>
   db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === col);
