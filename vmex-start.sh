@@ -42,13 +42,28 @@ install_in () {
 if needs_install "."; then install_in "." --include=dev || exit 1; fi
 if needs_install "server"; then install_in "server" --omit=dev || exit 1; fi
 
-# ---------- 4. Build the website ----------
+# ---------- 4. SQLite engine for this Linux server ----------
+# New npm versions block install scripts, so run the download step directly.
+SQLITE_BIN="server/node_modules/better-sqlite3/build/Release/better_sqlite3.node"
+if [ ! -f "$SQLITE_BIN" ]; then
+  echo "▶ Downloading the better-sqlite3 engine for this server..."
+  (cd server/node_modules/better-sqlite3 && ../.bin/prebuild-install) \
+    || (cd server/node_modules/better-sqlite3 && npx --yes node-gyp rebuild --release)
+
+  if [ ! -f "$SQLITE_BIN" ]; then
+    echo "✖ better-sqlite3 engine is still missing — see the errors above."
+    exit 1
+  fi
+  echo "✔ better-sqlite3 engine ready"
+fi
+
+# ---------- 5. Build the website ----------
 if [ "${BUILD_ON_START}" = "1" ] || [ ! -d dist ]; then
   echo "▶ Building the website..."
   npx vite build || { echo "✖ Website build failed"; exit 1; }
 fi
 
-# ---------- 5. Cloudflare Tunnel ----------
+# ---------- 6. Cloudflare Tunnel ----------
 CF_PID=""
 if [ -n "${CF_TUNNEL_TOKEN}" ]; then
   if [ ! -x ./cloudflared ]; then
@@ -65,7 +80,7 @@ else
   echo "! CF_TUNNEL_TOKEN is empty — running without Cloudflare Tunnel"
 fi
 
-# ---------- 6. Start the backend ----------
+# ---------- 7. Start the backend ----------
 cleanup () {
   echo "▶ Stopping VMEX..."
   [ -n "$NODE_PID" ] && kill "$NODE_PID" 2>/dev/null
