@@ -1,5 +1,6 @@
 import { useState, type ReactNode, type InputHTMLAttributes } from "react";
 import { Link, NavLink } from "react-router-dom";
+import AnimatedBackground from "../../components/AnimatedBackground";
 
 const perks = [
   "Instant config delivery after payment",
@@ -29,10 +30,7 @@ type Props = {
 export default function AuthLayout({ title, subtitle, children, footer, variant = "form" }: Props) {
   return (
     <section className="auth2" data-lenis-prevent>
-      <div className="auth2-bg" aria-hidden="true">
-        <span className="auth2-orb a" />
-        <span className="auth2-orb b" />
-      </div>
+      <AnimatedBackground />
 
       <aside className="auth2-panel">
         <Link to="/" className="auth-brand">

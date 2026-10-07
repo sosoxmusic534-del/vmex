@@ -12,11 +12,13 @@ import Configs from "./pages/portal/Configs";
 import Store from "./pages/portal/Store";
 import Invoices from "./pages/portal/Invoices.tsx";
 import Support from "./pages/portal/Support";
+import Account from "./pages/portal/Account";
 import { TicketThread } from "./components/portal/tickets";
 
 import AdminOverview from "./pages/admin/Overview";
 import AdminXui from "./pages/admin/Xui";
 import AdminInvoices from "./pages/admin/Invoices.tsx";
+import AdminTopups from "./pages/admin/Topups";
 import AdminUsers from "./pages/admin/Users";
 import AdminNetwork from "./pages/admin/Network";
 import AdminPayments from "./pages/admin/Payments";
@@ -47,6 +49,7 @@ import About from "./pages/About";
 import useSmoothScroll from "./hooks/useSmoothScroll";
 import useScrollReveal from "./hooks/useScrollReveal";
 import "./App.css";
+import "./portal-rail.css";
 
 function Home() {
   return (
@@ -113,6 +116,7 @@ export default function App() {
             <Route path="configs" element={<Configs />} />
             <Route path="store" element={<Store />} />
             <Route path="invoices" element={<Invoices />} />
+            <Route path="account" element={<Account />} />
             <Route path="support" element={<Support />} />
             <Route path="support/:id" element={<TicketThread />} />
 
@@ -127,6 +131,7 @@ export default function App() {
               <Route path="network" element={<AdminNetwork />} />
               <Route path="payments" element={<AdminPayments />} />
               <Route path="invoices" element={<AdminInvoices />} />
+              <Route path="topups" element={<AdminTopups />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="tickets" element={<AdminTickets />} />
               <Route path="settings" element={<AdminSettings />} />

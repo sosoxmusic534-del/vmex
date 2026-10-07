@@ -105,6 +105,15 @@ async function request(pathname, { method = "GET", body } = {}, retry = true) {
 
 export const listInbounds = () => request("/panel/api/inbounds/list");
 export const getInbound = (id) => request(`/panel/api/inbounds/get/${id}`);
+
+let onlineCache = { at: 0, list: [] };
+export async function getOnlineEmails() {
+  if (Date.now() - onlineCache.at < 15_000) return onlineCache.list;
+  const payload = await request("/panel/api/inbounds/onlines", { method: "POST" });
+  onlineCache = { at: Date.now(), list: Array.isArray(payload) ? payload : [] };
+  return onlineCache.list;
+}
+
 export async function getClientTraffic(email) {
   const encodedEmail = encodeURIComponent(email);
   try {

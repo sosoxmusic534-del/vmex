@@ -112,3 +112,30 @@ export type TicketMessage = {
 };
 
 export type UserRole = "customer" | "staff" | "admin";
+
+export type TopupStatus = "pending" | "paid" | "rejected" | "cancelled";
+
+export type Topup = {
+  id: number;
+  reference: string;
+  amount: number;
+  paymentMethod: string | null;
+  status: TopupStatus;
+  hasReceipt: boolean;
+  receiptUrl: string | null;
+  receiptUploadedAt: string | null;
+  rejectReason: string | null;
+  instructions?: string | null;
+  createdAt: string;
+  paidAt: string | null;
+  user?: { id: number; name: string; email: string };
+};
+
+export type CreditTx = {
+  id: number;
+  amount: number;
+  balanceAfter: number;
+  type: "topup" | "purchase" | "refund" | "admin";
+  note: string;
+  createdAt: string;
+};

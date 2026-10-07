@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Style, Avatar } from "@dicebear/core";
-import definition from "@dicebear/styles/initial-face.json";
+import definition from "@dicebear/styles/micah.json";
 
 const style = new Style(definition as ConstructorParameters<typeof Style>[0]);
 const cache = new Map<string, string>();
@@ -18,7 +18,7 @@ function avatarUri(seed: string) {
 type Props = {
   seed: string;
   name?: string;
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md" | "lg" | "xl";
 };
 
 export default function UserAvatar({ seed, name, size = "md" }: Props) {

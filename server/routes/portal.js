@@ -9,6 +9,7 @@ import { HttpError, provisionInvoice } from "../provision.js";
 import { enrichServices, getClientLinks, isConfigured } from "../xui.js";
 import { receiptUpload, checkMagic, isImage, RECEIPT_DIR } from "../uploads.js";
 import { notify } from "../discord.js";
+import { changeCredit } from "../credit.js";
 
 const r = Router();
 r.use(requireAuth);
@@ -166,7 +167,7 @@ r.post("/orders", async (req, res) => {
       if (user.balance < plan.price) {
         throw new HttpError(400, `Not enough balance. You have LKR ${user.balance}, this plan costs LKR ${plan.price}.`);
       }
-      q.addBalance.run(-plan.price, user.id);
+      changeCredit(user.id, -plan.price, "purchase", `${plan.name} · ${pkg.name} (#${reference})`);
       return insertInvoice();
     })();
 
@@ -175,7 +176,7 @@ r.post("/orders", async (req, res) => {
     } catch (error) {
       console.error(`[orders] balance activation failed for invoice ${invoiceId}:`, error.message);
       db.transaction(() => {
-        q.addBalance.run(plan.price, req.user.id);
+        changeCredit(req.user.id, plan.price, "refund", `Refund #${reference} (activation failed)`);
         q.cancel.run(invoiceId);
       })();
       throw new HttpError(502, "We couldn't activate your plan right now. Your balance has been refunded. Please try again or contact support.");

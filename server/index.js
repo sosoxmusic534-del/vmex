@@ -4,12 +4,15 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import cookieParser from "cookie-parser";
 import authRoutes from "./routes/auth.js";
+import accountRoutes from "./routes/account.js";
 import portalRoutes from "./routes/portal.js";
 import adminRoutes from "./routes/admin.js";
 import { customerTickets, adminTickets } from "./routes/tickets.js";
 import filesRoutes from "./routes/files.js";
+import discordRoutes from "./routes/discord.js";
 import { HttpError } from "./provision.js";
 import { XuiError } from "./xui.js";
+import { startDiscordSync } from "./discord-link.js";
 
 const PORT = process.env.PORT || 4000;
 const app = express();
@@ -19,6 +22,8 @@ app.use(express.json({ limit: "20kb" }));
 app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/account", accountRoutes);
+app.use("/api/discord", discordRoutes);
 app.use("/api/portal/tickets", customerTickets);
 app.use("/api/staff/tickets", adminTickets);
 app.use("/api/portal", portalRoutes);
@@ -91,4 +96,7 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: "Something went wrong on our side." });
 });
 
-app.listen(PORT, () => console.log(`VMEX API running on http://localhost:${PORT}`));
+app.listen(PORT, () => {
+  console.log(`VMEX API running on http://localhost:${PORT}`);
+  startDiscordSync();
+});

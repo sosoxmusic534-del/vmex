@@ -61,6 +61,18 @@ db.exec(`
     expires_at   INTEGER NOT NULL,
     created_at   TEXT NOT NULL DEFAULT (datetime('now'))
   );
+
+  CREATE TABLE IF NOT EXISTS discord_links (
+    user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    discord_id    TEXT NOT NULL UNIQUE,
+    username      TEXT NOT NULL,
+    avatar        TEXT,
+    access_token  TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expires_at    INTEGER NOT NULL,
+    last_status   TEXT,
+    linked_at     TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `);
 
 /* Helper: does a column exist? */
@@ -216,6 +228,35 @@ if (!db.prepare("SELECT COUNT(*) AS n FROM payment_methods").get().n) {
   addMethod.run("Card Payment", "manual", "card", "Coming soon", "", "disabled", 3);
   addMethod.run("Using Balance", "balance", "wallet", "Instant", "", "active", 4);
 }
+
+/* ---------- Store credit & top-ups ---------- */
+db.exec(`
+  CREATE TABLE IF NOT EXISTS credit_transactions (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount        INTEGER NOT NULL,
+    balance_after INTEGER NOT NULL,
+    type          TEXT NOT NULL,
+    note          TEXT NOT NULL DEFAULT '',
+    created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_credit_user ON credit_transactions(user_id);
+
+  CREATE TABLE IF NOT EXISTS topups (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id             INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    reference           TEXT NOT NULL UNIQUE,
+    amount              INTEGER NOT NULL,
+    payment_method_id   INTEGER,
+    payment_method_name TEXT,
+    status              TEXT NOT NULL DEFAULT 'pending',
+    receipt_file        TEXT,
+    receipt_uploaded_at TEXT,
+    reject_reason       TEXT,
+    created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+    paid_at             TEXT
+  );
+`);
 
 /* ---------- Settings helpers ---------- */
 export function getSetting(key, fallback = "") {

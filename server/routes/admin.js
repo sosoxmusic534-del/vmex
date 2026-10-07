@@ -8,6 +8,7 @@ import {
   removeClientByEmail, enrichServices, isConfigured,
   listInbounds, parseJson, resetXuiSession, xuiConfig,
 } from "../xui.js";
+import { changeCredit } from "../credit.js";
 
 const r = Router();
 r.use(requireAdmin);
@@ -370,11 +371,86 @@ r.post("/users/:id/balance", (req, res) => {
   }
   const user = q.userById.get(idParam(req));
   if (!user) throw new HttpError(404, "User not found.");
-  if ((user.balance ?? 0) + amount < 0) {
-    throw new HttpError(400, `Balance can't go below 0 (current LKR ${user.balance ?? 0}).`);
-  }
-  q.addBalance.run(amount, user.id);
-  res.json({ balance: (user.balance ?? 0) + amount });
+  const balance = changeCredit(
+    user.id,
+    amount,
+    "admin",
+    String(req.body?.note || `Adjusted by ${req.user.name}`)
+  );
+  res.json({ balance });
+});
+
+/* ---------- Top-ups ---------- */
+const TOPUP_SELECT = `
+  SELECT t.*, u.name AS user_name, u.email AS user_email FROM topups t
+  JOIN users u ON u.id = t.user_id`;
+
+const tq = {
+  all: db.prepare(`${TOPUP_SELECT} ORDER BY t.id DESC LIMIT 200`),
+  by: db.prepare(`${TOPUP_SELECT} WHERE t.status = ? ORDER BY t.id DESC LIMIT 200`),
+  get: db.prepare(`${TOPUP_SELECT} WHERE t.id = ?`),
+  markPaid: db.prepare("UPDATE topups SET status = 'paid', paid_at = datetime('now') WHERE id = ? AND status = 'pending'"),
+  reject: db.prepare("UPDATE topups SET status = 'rejected', reject_reason = ? WHERE id = ? AND status = 'pending'"),
+};
+
+const mapAdminTopup = (t) => ({
+  id: t.id,
+  reference: t.reference,
+  amount: t.amount,
+  paymentMethod: t.payment_method_name,
+  status: t.status,
+  hasReceipt: Boolean(t.receipt_file),
+  receiptUrl: t.receipt_file ? `/api/files/receipts/${t.receipt_file}` : null,
+  rejectReason: t.reject_reason,
+  createdAt: t.created_at,
+  paidAt: t.paid_at,
+  user: { id: t.user_id, name: t.user_name, email: t.user_email },
+});
+
+r.get("/topups", (req, res) => {
+  const status = String(req.query.status || "all");
+  const rows = ["pending", "paid", "rejected", "cancelled"].includes(status)
+    ? tq.by.all(status)
+    : tq.all.all();
+  res.json({ topups: rows.map(mapAdminTopup) });
+});
+
+r.post("/topups/:id/approve", (req, res) => {
+  const t = tq.get.get(idParam(req));
+  if (!t) throw new HttpError(404, "Top-up not found.");
+  if (t.status !== "pending") throw new HttpError(400, "Only pending top-ups can be approved.");
+
+  const balance = db.transaction(() => {
+    if (!tq.markPaid.run(t.id).changes) throw new HttpError(409, "This top-up was already processed.");
+    return changeCredit(t.user_id, t.amount, "topup", `Top-up #${t.reference}`);
+  })();
+
+  notify({
+    title: "✅ Top-up approved",
+    color: "success",
+    fields: [
+      { name: "Reference", value: `#${t.reference}` },
+      { name: "Customer", value: `${t.user_name} (${t.user_email})` },
+      { name: "Amount", value: `LKR ${t.amount}` },
+      { name: "New balance", value: `LKR ${balance}` },
+      { name: "Approved by", value: req.user.name },
+    ],
+  });
+  res.json({ ok: true });
+});
+
+r.post("/topups/:id/reject", (req, res) => {
+  const t = tq.get.get(idParam(req));
+  if (!t) throw new HttpError(404, "Top-up not found.");
+  const reason = text(req.body?.reason, 300) || "We couldn't verify this payment.";
+  if (!tq.reject.run(reason, t.id).changes) throw new HttpError(400, "Only pending top-ups can be rejected.");
+
+  notify({
+    title: "❌ Top-up rejected",
+    color: "danger",
+    fields: [{ name: "Reference", value: `#${t.reference}` }, { name: "Reason", value: reason, inline: false }],
+  });
+  res.json({ ok: true });
 });
 
 r.get("/services", async (_req, res) => {

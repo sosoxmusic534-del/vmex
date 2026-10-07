@@ -13,7 +13,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
   const location = useLocation();
 
   if (loading) return <Loading />;
-  if (!user) return <Navigate to="/portal/login" replace state={{ from: location.pathname }} />;
+  if (!user) return <Navigate to="/portal/login" replace state={{ from: location.pathname + location.search }} />;
   return <>{children}</>;
 }
 

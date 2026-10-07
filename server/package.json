@@ -7,7 +7,8 @@
     "dev": "node --env-file=.env --watch index.js",
     "start": "node --env-file=.env index.js",
     "make-admin": "node make-admin.js",
-    "test-email": "node --env-file=.env test-email.js"
+    "test-email": "node --env-file=.env test-email.js",
+    "discord-register": "node --env-file=.env discord-register.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -1,211 +1,202 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { avatarUrl } from "../../lib/avatar";
 import { formatLKR } from "../../lib/format";
-import { Ic } from "./icons";
+import AnimatedBackground from "../AnimatedBackground";
+import UserAvatar from "./UserAvatar";
 import { I, Toaster } from "./ui";
 
-type Item = { to: string; label: string; icon: ReactNode; end?: boolean };
+const STATUS_URL = "https://status.vmex.net";
 
-const svg = (d: ReactNode) => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{d}</svg>
-);
-const icHome = svg(<><path d="M3 11l9-8 9 8" /><path d="M5 10v10h14V10" /></>);
-const icLogout = svg(<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5M21 12H9" /></>);
-const icBell = svg(<><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" /></>);
-const icPlus = svg(<path d="M12 5v14M5 12h14" />);
-const icSupport = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-    <path d="M8 9h8M8 13h5" />
-  </svg>
-);
-const icTickets = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 8a2 2 0 0 0 2-2h14a2 2 0 0 0 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 0-2 2H5a2 2 0 0 0-2-2v-2a2 2 0 0 0 0-4z" />
-    <path d="M13 6v2M13 16v2M13 11v2" />
-  </svg>
-);
+type Item = { to: string; label: string; icon: ReactNode; end?: boolean; hideSm?: boolean };
+type Panel = "admin" | "settings" | null;
 
 const mainNav: Item[] = [
   { to: "/portal", label: "Dashboard", icon: I.grid, end: true },
+  { to: "/portal/store", label: "Plans", icon: I.store },
   { to: "/portal/services", label: "Services", icon: I.box },
   { to: "/portal/configs", label: "Configs", icon: I.sliders },
-  { to: "/portal/store", label: "Store", icon: I.store },
-  { to: "/portal/invoices", label: "Invoices", icon: I.file },
-  { to: "/portal/support", label: "Support", icon: icSupport },
+  { to: "/portal/invoices", label: "Invoices", icon: I.file, hideSm: true },
+  { to: "/portal/support", label: "Support", icon: I.ticket, hideSm: true },
 ];
 
 const adminNav: Item[] = [
-  { to: "/portal/admin", label: "Admin Overview", icon: I.chart, end: true },
+  { to: "/portal/admin", label: "Overview", icon: I.chart, end: true },
   { to: "/portal/admin/xui", label: "X-UI Panel", icon: I.server },
-  { to: "/portal/admin/invoices", label: "Approve Invoices", icon: I.card },
+  { to: "/portal/admin/network", label: "Networks & Packages", icon: I.globe },
+  { to: "/portal/admin/payments", label: "Payment Methods", icon: I.card },
+  { to: "/portal/admin/invoices", label: "Approve Invoices", icon: I.file },
+  { to: "/portal/admin/topups", label: "Approve Top-ups", icon: I.wallet },
   { to: "/portal/admin/users", label: "Users & Services", icon: I.users },
-  { to: "/portal/admin/tickets", label: "Tickets", icon: icTickets },
-  { to: "/portal/admin/settings", label: "Settings", icon: I.sliders },
+  { to: "/portal/staff/tickets", label: "Support Tickets", icon: I.ticket },
 ];
 
-const staffNav: Item[] = [
-  { to: "/portal/staff/tickets", label: "Support Tickets", icon: icTickets },
-];
-
-function RailLink({ to, label, icon, end }: Item) {
+function RailLink({ item }: { item: Item }) {
   return (
     <NavLink
-      to={to}
-      end={end}
-      data-tip={label}
-      aria-label={label}
-      className={({ isActive }) => `px-rail-btn ${isActive ? "active" : ""}`}
+      to={item.to}
+      end={item.end}
+      aria-label={item.label}
+      data-tip={item.label}
+      className={({ isActive }) => `rail-btn ${isActive ? "active" : ""} ${item.hideSm ? "hide-sm" : ""}`}
     >
-      {icon}
+      {item.icon}
+    </NavLink>
+  );
+}
+
+function FlyLink({ item, onClick }: { item: Item; onClick: () => void }) {
+  return (
+    <NavLink
+      to={item.to}
+      end={item.end}
+      onClick={onClick}
+      className={({ isActive }) => `flyout-link ${isActive ? "active" : ""}`}
+    >
+      {item.icon}
+      <span>{item.label}</span>
     </NavLink>
   );
 }
 
 export default function PortalLayout() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [menuOpen, setMenuOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const [panel, setPanel] = useState<Panel>(null);
+  const railRef = useRef<HTMLElement>(null);
 
-  useEffect(() => setMenuOpen(false), [pathname]);
+  useEffect(() => setPanel(null), [pathname]);
   useEffect(() => {
-    const onDown = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setMenuOpen(false);
+    const onDown = (event: MouseEvent) => {
+      if (railRef.current && !railRef.current.contains(event.target as Node)) setPanel(null);
     };
+    const onKey = (event: KeyboardEvent) => event.key === "Escape" && setPanel(null);
     document.addEventListener("mousedown", onDown);
-    return () => document.removeEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
   }, []);
 
   if (!user) return null;
 
   const isAdmin = user.role === "admin";
   const isStaff = user.role === "staff";
-  const balance = (user as { balance?: number }).balance ?? 0;
-  const avatar = avatarUrl(user.email);
+  const adminActive = pathname.startsWith("/portal/admin") || pathname.startsWith("/portal/staff");
+  const close = () => setPanel(null);
+  const toggle = (nextPanel: Exclude<Panel, null>) => setPanel((current) => current === nextPanel ? null : nextPanel);
 
   const onLogout = async () => {
+    close();
     await logout();
     navigate("/portal/login", { replace: true });
   };
 
-  return (
-    <div className="px-shell">
-      <aside className="px-rail">
-        <Link to="/portal" className="px-rail-logo" aria-label="VMEX">
-          <img src="/logo.png" alt="" />
-        </Link>
+  const rail = (
+    <nav className="rail" ref={railRef} aria-label="Portal navigation">
+      <Link to="/portal" className="rail-logo" aria-label="VMEX dashboard">
+        <img src="/logo.png" alt="" />
+      </Link>
 
-        <nav className="px-rail-group">
-          {mainNav.map((i) => <RailLink key={i.to} {...i} />)}
-        </nav>
+      <div className="rail-sep" />
+
+      <div className="rail-nav">
+        {mainNav.map((item) => <RailLink key={item.to} item={item} />)}
+
+        {isStaff && (
+          <RailLink item={{ to: "/portal/staff/tickets", label: "Support Tickets", icon: I.headset }} />
+        )}
 
         {isAdmin && (
-          <nav className="px-rail-group admin">
-            {adminNav.map((i) => <RailLink key={i.to} {...i} />)}
-          </nav>
-        )}
-
-        {(isStaff || isAdmin) && (
-          <nav className="px-rail-group staff">
-            {staffNav.map((item) => <RailLink key={item.to} {...item} />)}
-          </nav>
-        )}
-
-        <div className="px-rail-bottom">
-          <Link to="/" className="px-rail-round" data-tip="Back to site" aria-label="Back to site">{icHome}</Link>
-          <button type="button" onClick={onLogout} className="px-rail-round" data-tip="Log out" aria-label="Log out">
-            {icLogout}
-          </button>
-        </div>
-      </aside>
-
-      <div className="px-main">
-        <header className="px-top">
-          <Link to="/portal/store" className="px-wallet">
-            <span className="px-wallet-icon">{Ic.wallet}</span>
-            <span>
-              <small>Wallet</small>
-              <b>{formatLKR(balance)}</b>
-            </span>
-          </Link>
-          <Link to="/portal/store" className="px-pill" aria-label="Top up">{icPlus}</Link>
-
-          <div className="px-top-center">
-            <Link to="/portal/services" className="px-pill white" aria-label="Services">{I.box}</Link>
-            <Link to="/portal/configs" className="px-pill white" aria-label="Configs">{I.sliders}</Link>
-            <Link to="/portal/invoices" className="px-pill white" aria-label="Invoices">{I.file}</Link>
-            <Link to="/portal/store" className="px-cta">
-              Get a new config {I.arrow}
-            </Link>
-          </div>
-
-          <button type="button" className="px-pill bell" aria-label="Notifications">
-            {icBell}
-            <i />
-          </button>
-
-          <div className="px-account" ref={menuRef}>
+          <div className="rail-pop">
             <button
               type="button"
-              className={`px-account-btn ${menuOpen ? "open" : ""}`}
-              onClick={() => setMenuOpen((o) => !o)}
-              aria-expanded={menuOpen}
+              className={`rail-btn ${adminActive ? "active" : ""} ${panel === "admin" ? "open" : ""}`}
+              data-tip="Admin"
+              aria-label="Admin menu"
+              aria-expanded={panel === "admin"}
+              onClick={() => toggle("admin")}
             >
-              <img src={avatar} alt="" />
-              <span className="px-account-text">
-                <b>{user.name}</b>
-                <small className={user.role}>{isAdmin ? "Administrator" : isStaff ? "Staff" : "Customer"}</small>
-              </span>
-              <span className="px-account-chev">{Ic.chevron}</span>
+              {I.shield}
             </button>
 
-            {menuOpen && (
-              <div className="px-account-menu">
-                <div className="px-account-head">
-                  <img src={avatar} alt="" />
-                  <div>
-                    <b>{user.name}</b>
-                    <small>{user.email}</small>
-                  </div>
-                </div>
-
-                <Link to="/portal/store" className="px-account-wallet">
-                  <span className="px-coin c1">{Ic.wallet}</span>
-                  <span>
-                    <small>Wallet balance</small>
-                    <b>{formatLKR(balance)}</b>
-                  </span>
-                </Link>
-
-                <nav className="px-account-links">
-                  <Link to="/portal">{Ic.grid} Dashboard</Link>
-                  <Link to="/portal/services">{Ic.box} My services</Link>
-                  <Link to="/portal/invoices">{Ic.receipt} Invoices</Link>
-                  <Link to="/portal/support">{Ic.chat} Support</Link>
-                  {isAdmin && <Link to="/portal/admin">{Ic.shield} Admin panel</Link>}
-                  <Link to="/">{Ic.home} Back to website</Link>
-                </nav>
-
-                <button type="button" className="px-account-logout" onClick={onLogout}>
-                  {Ic.logout} Log out
-                </button>
+            {panel === "admin" && (
+              <div className="flyout flyout-mid" role="menu">
+                <p className="flyout-title">Admin</p>
+                {adminNav.map((item) => <FlyLink key={item.to} item={item} onClick={close} />)}
               </div>
             )}
           </div>
-        </header>
+        )}
+      </div>
 
-        <main className="px-content">
-          <div key={pathname} className="px-page">
-            <Outlet />
-          </div>
-        </main>
+      <div className="rail-bottom">
+        <div className="rail-pop">
+          <button
+            type="button"
+            className={`rail-btn rail-me ${panel === "settings" ? "open" : ""}`}
+            data-tip="Settings"
+            aria-label="Settings"
+            aria-expanded={panel === "settings"}
+            onClick={() => toggle("settings")}
+          >
+            <UserAvatar seed={user.email} name={user.name} size="sm" />
+            <span className="rail-gear">{I.settings}</span>
+          </button>
+
+          {panel === "settings" && (
+            <div className="flyout flyout-bottom" role="menu">
+              <div className="flyout-user">
+                <UserAvatar seed={user.email} name={user.name} />
+                <div>
+                  <b>{user.name}</b>
+                  <small className={`role-${user.role}`}>{user.role.toUpperCase()}</small>
+                </div>
+                <span className="flyout-balance">{formatLKR(user.balance ?? 0)}</span>
+              </div>
+
+              <FlyLink item={{ to: "/portal/account", label: "My Account", icon: I.user }} onClick={close} />
+              <div className="show-sm">
+                <FlyLink item={{ to: "/portal/invoices", label: "Invoices", icon: I.file }} onClick={close} />
+                <FlyLink item={{ to: "/portal/support", label: "Support", icon: I.ticket }} onClick={close} />
+              </div>
+
+              <div className="flyout-sep" />
+
+              <a href={STATUS_URL} target="_blank" rel="noopener noreferrer" className="flyout-link" onClick={close}>
+                {I.pulse}<span>System Status</span>
+              </a>
+              <Link to="/#how-it-works" className="flyout-link" onClick={close}>
+                {I.book}<span>Setup Guide</span>
+              </Link>
+              <Link to="/" className="flyout-link" onClick={close}>
+                {I.back}<span>Back to website</span>
+              </Link>
+
+              <div className="flyout-sep" />
+
+              <button type="button" className="flyout-link danger" onClick={onLogout}>
+                {I.logout}<span>Log out</span>
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+
+  return (
+    <div className="dash">
+      <AnimatedBackground />
+      {createPortal(rail, document.body)}
+
+      <div className="dash-main">
+        <div key={pathname} className="dash-page">
+          <Outlet />
+        </div>
       </div>
 
       <Toaster />

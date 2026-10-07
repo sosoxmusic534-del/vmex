@@ -26,6 +26,7 @@ type AuthCtx = {
   verifyOtp: (challengeId: string, code: string) => Promise<void>;
   resendOtp: (challengeId: string) => Promise<void>;
   logout: () => Promise<void>;
+  refresh: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthCtx | null>(null);
@@ -73,8 +74,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const refresh = async () => {
+    const response = await api<{ user: User }>("/auth/me").catch(() => null);
+    if (response) setUser(response.user);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, verifyOtp, resendOtp, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, verifyOtp, resendOtp, logout, refresh }}>
       {children}
     </AuthContext.Provider>
   );

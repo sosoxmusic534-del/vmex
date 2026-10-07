@@ -27,6 +27,7 @@ export default function CheckoutModal({ plan, onClose }: { plan: Plan; onClose: 
   const [packageId, setPackageId] = useState<number | null>(null);
   const [methodId, setMethodId] = useState<number | null>(null);
   const [receipt, setReceipt] = useState<File | null>(null);
+  const [slipLater, setSlipLater] = useState(false);
   const [busy, setBusy] = useState(false);
   const [closing, setClosing] = useState(false);
 
@@ -162,8 +163,14 @@ export default function CheckoutModal({ plan, onClose }: { plan: Plan; onClose: 
                       <p className="co-receipt-title">Pay {formatLKR(plan.price)} to:</p>
                       <pre className="pay-instructions">{method.instructions}</pre>
                     </>}
-                    <p className="co-receipt-title">Then upload your receipt</p>
-                    <ReceiptPicker file={receipt} onChange={setReceipt} />
+                    <p className="co-receipt-title">Payment slip</p>
+                    {!slipLater && <ReceiptPicker file={receipt} onChange={setReceipt} />}
+                    <label className="auth-check-row slip-later">
+                      <input type="checkbox" checked={slipLater}
+                        onChange={(event) => { setSlipLater(event.target.checked); if (event.target.checked) setReceipt(null); }} />
+                      <span className="auth-box" />
+                      <span>I'll upload the slip later from <b>My Invoices</b></span>
+                    </label>
                   </div>}
                 </>}
               </div> : null}
@@ -173,7 +180,7 @@ export default function CheckoutModal({ plan, onClose }: { plan: Plan; onClose: 
           {step > 0 ? <button type="button" className="dash-btn" onClick={() => go(step - 1)} disabled={busy}>{I.back} Back</button> : <span />}
           {step < STEPS.length - 1
             ? <button type="button" className="dash-btn primary" disabled={!canNext} onClick={() => go(step + 1)}>Next {I.arrow}</button>
-            : <button type="button" className="dash-btn primary" disabled={!method || busy || (needsReceipt && !receipt)} onClick={checkout}>{busy ? <Spinner /> : <>{I.zap} Check out</>}</button>}
+            : <button type="button" className="dash-btn primary" disabled={!method || busy || (needsReceipt && !receipt && !slipLater)} onClick={checkout}>{busy ? <Spinner /> : <>{I.zap} Check out</>}</button>}
         </footer>
       </div>
     </div>,
