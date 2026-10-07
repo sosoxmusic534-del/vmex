@@ -4,7 +4,6 @@ import { fileURLToPath } from "node:url";
 import express from "express";
 import cookieParser from "cookie-parser";
 import avatarRoutes from "./routes/avatar.js";
-app.use("/api/me", avatarRoutes);
 import authRoutes from "./routes/auth.js";
 import accountRoutes from "./routes/account.js";
 import portalRoutes from "./routes/portal.js";
@@ -32,6 +31,7 @@ app.use("/api/portal", portalRoutes);
 app.use("/api/admin/tickets", adminTickets);
 app.use("/api/admin", adminRoutes);
 app.use("/api/files", filesRoutes);
+app.use("/api/me", avatarRoutes);
 
 /* ---------- robots.txt & sitemap.xml (per domain) ---------- */
 const LIVE_HOSTS = ["vmex.net", "www.vmex.net"];
