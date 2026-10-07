@@ -1,5 +1,9 @@
 #!/bin/bash
-# VMEX start script for Pterodactyl
+# =========================================================
+#  VMEX start script for Pterodactyl
+#  Pulls code → installs packages → SQLite engine →
+#  builds site → Cloudflare Tunnel → starts the backend
+# =========================================================
 cd /home/container || exit 1
 
 export PORT="${SERVER_PORT}"
@@ -68,24 +72,27 @@ CF_PID=""
 if [ -n "${CF_TUNNEL_TOKEN}" ]; then
   if [ ! -x ./cloudflared ]; then
     ARCH=$(uname -m)
-    [ "$ARCH" = "aarch64" ] && CF_ARCH=arm64 || CF_ARCH=amd64
+    if [ "$ARCH" = "aarch64" ]; then CF_ARCH=arm64; else CF_ARCH=amd64; fi
     echo "▶ Downloading cloudflared..."
     curl -fsSL -o cloudflared "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-${CF_ARCH}" \
       && chmod +x cloudflared
   fi
   echo "▶ Starting Cloudflare Tunnel..."
-  ./cloudflared tunnel --no-autoupdate --loglevel warn run --token "${CF_TUNNEL_TOKEN}" &
+  ./cloudflared tunnel --no-autoupdate --loglevel warn --protocol http2 run --token "${CF_TUNNEL_TOKEN}" &
   CF_PID=$!
 else
   echo "! CF_TUNNEL_TOKEN is empty — running without Cloudflare Tunnel"
 fi
 
 # ---------- 7. Start the backend ----------
+NODE_PID=""
+
 cleanup () {
   echo "▶ Stopping VMEX..."
   [ -n "$NODE_PID" ] && kill "$NODE_PID" 2>/dev/null
   [ -n "$CF_PID" ] && kill "$CF_PID" 2>/dev/null
-  wait
+  wait 2>/dev/null
+  exit 0
 }
 trap cleanup SIGINT SIGTERM
 
@@ -93,4 +100,8 @@ cd server
 node --env-file=.env index.js &
 NODE_PID=$!
 wait "$NODE_PID"
-cleanup
+
+# If the backend stops or crashes, stop the tunnel too
+echo "! Backend stopped"
+[ -n "$CF_PID" ] && kill "$CF_PID" 2>/dev/null
+wait 2>/dev/null
