@@ -37,9 +37,10 @@ export default function DiscordLinkCard() {
       window.location.href = "/api/discord/link";
       return;
     }
+    const reason = new URLSearchParams(search).get("reason");
     if (p === "linked") toast("Discord connected!");
-    if (p === "error") toast("Couldn't connect Discord. Please try again.", "error");
-    if (p === "cancelled") toast("Discord connection cancelled", "error");
+    if (p === "error") toast(`Discord error: ${reason ?? "please try again"}`, "error");
+    if (p === "cancelled") toast("You cancelled the Discord approval", "error");
     navigate("/portal/account#discord", { replace: true });
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps

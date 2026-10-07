@@ -41,7 +41,12 @@ r.get("/callback", requireAuth, async (req, res) => {
   const [state, uid] = String(req.cookies[STATE_COOKIE] || "").split(".");
   res.clearCookie(STATE_COOKIE, { path: "/api/discord" });
 
-  if (req.query.error) return back(res, "cancelled");
+  if (req.query.error) {
+    const reason = String(req.query.error_description || req.query.error);
+    console.error("[discord] authorize error:", req.query.error, "-", reason);
+    const status = req.query.error === "access_denied" ? "cancelled" : "error";
+    return res.redirect(`/portal/account?discord=${status}&reason=${encodeURIComponent(reason)}#discord`);
+  }
   if (!state || state !== req.query.state || Number(uid) !== req.user.id) return back(res, "error");
 
   try {
