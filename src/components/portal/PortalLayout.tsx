@@ -3,7 +3,6 @@ import { createPortal } from "react-dom";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { formatLKR } from "../../lib/format";
-import AnimatedBackground from "../AnimatedBackground";
 import UserAvatar from "./UserAvatar";
 import { I, Toaster } from "./ui";
 
@@ -190,7 +189,6 @@ export default function PortalLayout() {
 
   return (
     <div className="dash">
-      <AnimatedBackground />
       {createPortal(rail, document.body)}
 
       <div className="dash-main">

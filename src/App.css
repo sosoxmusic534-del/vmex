@@ -7961,3 +7961,63 @@ html::-webkit-scrollbar {
   color: #fcd34d;
 }
 .dl-note svg { flex-shrink: 0; width: 15px; height: 15px; margin-top: 2px; }
+
+/* ===== Plain dark purple dashboard ===== */
+:root {
+  --dash-bg: #0b0818;
+  --dash-panel: #110d21;
+  --dash-panel-2: #151029;
+  --dash-line: rgba(255, 255, 255, 0.06);
+  --dash-soft: #b9acd9;
+}
+
+/* Page background */
+html:has(.dash),
+body:has(.dash),
+.dash {
+  background: var(--dash-bg) !important;
+}
+.dash .abg,
+.dash .wave-bg {
+  display: none !important;
+}
+
+/* Cards: solid, slightly lighter, thin border (no glass blur) */
+.dash-main [class*="card"]:not([class*="card-head"]) {
+  background-color: var(--dash-panel) !important;
+  border-color: var(--dash-line) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+/* Inner boxes (stats, configs, inputs) one step lighter */
+.dash-main .mini-stat,
+.dash-main .config,
+.dash-main .acc-stat,
+.dash-main .tbl-wrap,
+.dash-main .field input,
+.dash-main .field textarea,
+.dash-main .field select {
+  background-color: var(--dash-panel-2) !important;
+  border-color: var(--dash-line) !important;
+}
+
+/* Sidebar rail matches */
+.dash-rail {
+  background: var(--dash-panel) !important;
+  border-color: var(--dash-line) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
+}
+
+/* Softer lavender for muted text, like the screenshot */
+.dash-main .dash-muted,
+.dash-main small {
+  color: var(--dash-soft);
+}
+
+/* Tables: thin purple-grey lines */
+.dash-main .tbl th,
+.dash-main .tbl td {
+  border-color: var(--dash-line) !important;
+}

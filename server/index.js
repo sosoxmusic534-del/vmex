@@ -3,6 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import express from "express";
 import cookieParser from "cookie-parser";
+import avatarRoutes from "./routes/avatar.js";
+app.use("/api/me", avatarRoutes);
 import authRoutes from "./routes/auth.js";
 import accountRoutes from "./routes/account.js";
 import portalRoutes from "./routes/portal.js";

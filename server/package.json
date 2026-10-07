@@ -11,6 +11,9 @@
     "discord-register": "node --env-file=.env discord-register.js"
   },
   "dependencies": {
+    "@dicebear/core": "^10.7.0",
+    "@dicebear/styles": "^10.6.0",
+    "@resvg/resvg-js": "^2.6.2",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.11.1",
     "cookie-parser": "^1.4.7",
