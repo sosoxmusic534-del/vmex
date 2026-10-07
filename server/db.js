@@ -7,7 +7,9 @@ const db = new Database(path.join(__dirname, "vmex.db"));
 db.pragma("journal_mode = WAL");
 db.pragma("foreign_keys = ON");
 
-/* ---------- Core tables ---------- */
+/* =========================================================
+   1. Core tables
+   ========================================================= */
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,49 +63,39 @@ db.exec(`
     expires_at   INTEGER NOT NULL,
     created_at   TEXT NOT NULL DEFAULT (datetime('now'))
   );
-
-  CREATE TABLE IF NOT EXISTS discord_links (
-    user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
-    discord_id    TEXT NOT NULL UNIQUE,
-    username      TEXT NOT NULL,
-    avatar        TEXT,
-    access_token  TEXT NOT NULL,
-    refresh_token TEXT NOT NULL,
-    expires_at    INTEGER NOT NULL,
-    last_status   TEXT,
-    linked_at     TEXT NOT NULL DEFAULT (datetime('now'))
-  );
 `);
 
-/* Discord status (headless presence) */
-for (const [col, type] of Object.entries({
-  scopes: "TEXT",
-  presence_enabled: "INTEGER NOT NULL DEFAULT 0",
-  hs_token: "TEXT",
-  hs_started_at: "INTEGER",
-  hs_updated_at: "INTEGER",
-  hs_key: "TEXT",
-})) {
-  if (!hasCol("discord_links", col)) db.exec(`ALTER TABLE discord_links ADD COLUMN ${col} ${type}`);
-}
-
-/* Helper: does a column exist? */
+/* Helper: does a column exist? (must stay ABOVE every hasCol use) */
 const hasCol = (table, col) =>
   db.prepare(`PRAGMA table_info(${table})`).all().some((c) => c.name === col);
 
-/* ---------- Users: role, balance, email verification ---------- */
-if (!hasCol("users", "role")) {
-  db.exec("ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'customer'");
-}
-if (!hasCol("users", "balance")) {
-  db.exec("ALTER TABLE users ADD COLUMN balance INTEGER NOT NULL DEFAULT 0");
-}
+const addCols = (table, cols) => {
+  for (const [col, type] of Object.entries(cols)) {
+    if (!hasCol(table, col)) db.exec(`ALTER TABLE ${table} ADD COLUMN ${col} ${type}`);
+  }
+};
+
+/* =========================================================
+   2. Users: role, balance, email verification, presence
+   ========================================================= */
+addCols("users", {
+  role: "TEXT NOT NULL DEFAULT 'customer'",
+  balance: "INTEGER NOT NULL DEFAULT 0",
+  presence_token_hash: "TEXT",
+  avatar_id: "TEXT",
+});
+
 if (!hasCol("users", "email_verified")) {
   db.exec("ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0");
   db.exec("UPDATE users SET email_verified = 1"); // old accounts stay usable
 }
 
-/* ---------- Multi-inbound plans & services ---------- */
+db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_presence ON users(presence_token_hash)");
+db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_avatar ON users(avatar_id)");
+
+/* =========================================================
+   3. Multi-inbound plans & services
+   ========================================================= */
 if (!hasCol("plans", "inbound_ids")) {
   db.exec("ALTER TABLE plans ADD COLUMN inbound_ids TEXT NOT NULL DEFAULT '[]'");
   db.exec("UPDATE plans SET inbound_ids = json_array(inbound_id) WHERE inbound_id IS NOT NULL");
@@ -113,7 +105,9 @@ if (!hasCol("services", "inbound_ids")) {
   db.exec("UPDATE services SET inbound_ids = json_array(inbound_id)");
 }
 
-/* ---------- Catalog: carriers, SNI packages, payment methods ---------- */
+/* =========================================================
+   4. Catalog: carriers, SNI packages, payment methods
+   ========================================================= */
 db.exec(`
   CREATE TABLE IF NOT EXISTS carriers (
     id     INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -147,8 +141,10 @@ db.exec(`
   );
 `);
 
-/* ---------- Invoice extra columns (checkout + receipts) ---------- */
-const invoiceCols = {
+/* =========================================================
+   5. Invoice extras (checkout + receipts)
+   ========================================================= */
+addCols("invoices", {
   device: "TEXT",
   carrier_name: "TEXT",
   package_id: "INTEGER",
@@ -159,12 +155,11 @@ const invoiceCols = {
   receipt_file: "TEXT",
   receipt_uploaded_at: "TEXT",
   reject_reason: "TEXT",
-};
-for (const [col, type] of Object.entries(invoiceCols)) {
-  if (!hasCol("invoices", col)) db.exec(`ALTER TABLE invoices ADD COLUMN ${col} ${type}`);
-}
+});
 
-/* ---------- Email OTP codes ---------- */
+/* =========================================================
+   6. Email OTP codes
+   ========================================================= */
 db.exec(`
   CREATE TABLE IF NOT EXISTS otp_challenges (
     id           TEXT PRIMARY KEY,
@@ -178,7 +173,9 @@ db.exec(`
   );
 `);
 
-/* ---------- Support tickets ---------- */
+/* =========================================================
+   7. Support tickets
+   ========================================================= */
 db.exec(`
   CREATE TABLE IF NOT EXISTS tickets (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -201,47 +198,11 @@ db.exec(`
 
   CREATE INDEX IF NOT EXISTS idx_ticket_messages_ticket ON ticket_messages(ticket_id);
 `);
+addCols("tickets", { priority: "TEXT NOT NULL DEFAULT 'normal'" });
 
-/* Extra ticket columns used by routes/tickets.js */
-if (!hasCol("tickets", "priority")) {
-  db.exec("ALTER TABLE tickets ADD COLUMN priority TEXT NOT NULL DEFAULT 'normal'");
-}
-
-/* ---------- Starter data (only inserted once) ---------- */
-const seed = db.prepare(
-  "INSERT OR IGNORE INTO plans (slug, name, description, protocols, price, data_gb, days) VALUES (?, ?, ?, ?, ?, ?, ?)"
-);
-seed.run("100gb", "100GB Monthly Plan", "Fast • Stable • Reliable V2Ray server config.", "VLESS / VMess", 120, 100, 30);
-seed.run("200gb", "200GB Monthly Plan", "Ultra-fast V2Ray configuration with 200GB high-speed quota.", "VLESS / VMess", 300, 200, 30);
-seed.run("unlimited", "Unlimited Monthly Plan", "Zero data limits! High-speed downloading, 4K streaming & gaming.", "VLESS / VMess / Trojan", 600, 0, 30);
-
-/* Edit placeholder SNI values and payment instructions in the admin panel. */
-if (!db.prepare("SELECT COUNT(*) AS n FROM carriers").get().n) {
-  const addCarrier = db.prepare("INSERT INTO carriers (name, logo, sort) VALUES (?, ?, ?)");
-  const dialog = addCarrier.run("Dialog", "/logos/dialog.jpg", 1).lastInsertRowid;
-  addCarrier.run("SLT Mobitel", "/logos/mobitel.png", 2);
-  addCarrier.run("Airtel", "/logos/airtel.png", 3);
-  addCarrier.run("Hutch", "/logos/hutch.png", 4);
-
-  const addPackage = db.prepare(
-    "INSERT INTO sni_packages (carrier_id, device, name, sni, tag, sort) VALUES (?, ?, ?, ?, ?, ?)"
-  );
-  addPackage.run(dialog, "both", "Dialog Zoom", "example.zoom.us", "Most Popular", 1);
-  addPackage.run(dialog, "sim", "Dialog TikTok", "example.tiktok.com", "TikTok", 2);
-}
-
-if (!db.prepare("SELECT COUNT(*) AS n FROM payment_methods").get().n) {
-  const addMethod = db.prepare(
-    "INSERT INTO payment_methods (name, type, icon, description, instructions, status, sort) VALUES (?, ?, ?, ?, ?, ?, ?)"
-  );
-  addMethod.run("Bank Transfer", "manual", "bank", "Manual approval",
-    "Bank: Your Bank\nAccount name: VMEX Solutions\nAccount no: 0000 0000 0000\nBranch: Your Branch", "active", 1);
-  addMethod.run("eZ Cash", "manual", "ezcash", "Manual approval", "Send to: 07X XXX XXXX (VMEX)", "active", 2);
-  addMethod.run("Card Payment", "manual", "card", "Coming soon", "", "disabled", 3);
-  addMethod.run("Using Balance", "balance", "wallet", "Instant", "", "active", 4);
-}
-
-/* ---------- Store credit & top-ups ---------- */
+/* =========================================================
+   8. Store credit & top-ups
+   ========================================================= */
 db.exec(`
   CREATE TABLE IF NOT EXISTS credit_transactions (
     id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -270,7 +231,98 @@ db.exec(`
   );
 `);
 
-/* ---------- Settings helpers ---------- */
+/* =========================================================
+   9. Gift cards
+   ========================================================= */
+db.exec(`
+  CREATE TABLE IF NOT EXISTS gift_cards (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    code         TEXT NOT NULL,
+    code_key     TEXT NOT NULL UNIQUE,
+    amount       INTEGER NOT NULL,
+    max_uses     INTEGER NOT NULL DEFAULT 1,
+    uses         INTEGER NOT NULL DEFAULT 0,
+    expires_at   TEXT,
+    active       INTEGER NOT NULL DEFAULT 1,
+    note         TEXT NOT NULL DEFAULT '',
+    created_by   INTEGER,
+    purchased_by INTEGER,
+    created_at   TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE TABLE IF NOT EXISTS gift_card_redemptions (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    gift_card_id INTEGER NOT NULL REFERENCES gift_cards(id) ON DELETE CASCADE,
+    user_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    amount       INTEGER NOT NULL,
+    created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+    UNIQUE (gift_card_id, user_id)
+  );
+`);
+
+/* =========================================================
+   10. Discord links (roles + "Playing VMEX" status)
+   ========================================================= */
+db.exec(`
+  CREATE TABLE IF NOT EXISTS discord_links (
+    user_id       INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    discord_id    TEXT NOT NULL UNIQUE,
+    username      TEXT NOT NULL,
+    avatar        TEXT,
+    access_token  TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    expires_at    INTEGER NOT NULL,
+    last_status   TEXT,
+    linked_at     TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+`);
+addCols("discord_links", {
+  scopes: "TEXT",
+  presence_enabled: "INTEGER NOT NULL DEFAULT 0",
+  hs_token: "TEXT",
+  hs_started_at: "INTEGER",
+  hs_updated_at: "INTEGER",
+  hs_key: "TEXT",
+});
+
+/* =========================================================
+   11. Starter data (only inserted once)
+   ========================================================= */
+const seedPlan = db.prepare(
+  "INSERT OR IGNORE INTO plans (slug, name, description, protocols, price, data_gb, days) VALUES (?, ?, ?, ?, ?, ?, ?)"
+);
+seedPlan.run("100gb", "100GB Monthly Plan", "Fast • Stable • Reliable V2Ray server config.", "VLESS / VMess", 120, 100, 30);
+seedPlan.run("200gb", "200GB Monthly Plan", "Ultra-fast V2Ray configuration with 200GB high-speed quota.", "VLESS / VMess", 300, 200, 30);
+seedPlan.run("unlimited", "Unlimited Monthly Plan", "Zero data limits! High-speed downloading, 4K streaming & gaming.", "VLESS / VMess / Trojan", 600, 0, 30);
+
+if (!db.prepare("SELECT COUNT(*) AS n FROM carriers").get().n) {
+  const addCarrier = db.prepare("INSERT INTO carriers (name, logo, sort) VALUES (?, ?, ?)");
+  const dialog = addCarrier.run("Dialog", "/logos/dialog.jpg", 1).lastInsertRowid;
+  addCarrier.run("SLT Mobitel", "/logos/mobitel.png", 2);
+  addCarrier.run("Airtel", "/logos/airtel.png", 3);
+  addCarrier.run("Hutch", "/logos/hutch.png", 4);
+
+  const addPackage = db.prepare(
+    "INSERT INTO sni_packages (carrier_id, device, name, sni, tag, sort) VALUES (?, ?, ?, ?, ?, ?)"
+  );
+  addPackage.run(dialog, "both", "Dialog Zoom", "example.zoom.us", "Most Popular", 1);
+  addPackage.run(dialog, "sim", "Dialog TikTok", "example.tiktok.com", "TikTok", 2);
+}
+
+if (!db.prepare("SELECT COUNT(*) AS n FROM payment_methods").get().n) {
+  const addMethod = db.prepare(
+    "INSERT INTO payment_methods (name, type, icon, description, instructions, status, sort) VALUES (?, ?, ?, ?, ?, ?, ?)"
+  );
+  addMethod.run("Bank Transfer", "manual", "bank", "Manual approval",
+    "Bank: Your Bank\nAccount name: VMEX Solutions\nAccount no: 0000 0000 0000\nBranch: Your Branch", "active", 1);
+  addMethod.run("eZ Cash", "manual", "ezcash", "Manual approval", "Send to: 07X XXX XXXX (VMEX)", "active", 2);
+  addMethod.run("Card Payment", "manual", "card", "Coming soon", "", "disabled", 3);
+  addMethod.run("Using Balance", "balance", "wallet", "Instant", "", "active", 4);
+}
+
+/* =========================================================
+   12. Settings helpers
+   ========================================================= */
 export function getSetting(key, fallback = "") {
   const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key);
   return row ? row.value : fallback;
