@@ -638,13 +638,32 @@ body {
   flex-wrap: wrap;
   justify-content: center;
 }
-.hero-chips span {
+.hero-chips > span {
   padding: 6px 14px;
   font-size: 0.8rem;
   color: #cfe3ff;
   border-radius: 8px;
   background: rgba(10, 22, 48, 0.6);
   border: 1px solid var(--border);
+}
+.hero-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.hero-chip-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-chip-icon svg {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: #7fb3ff;
+}
+.hero-chip-ping .hero-chip-icon svg {
+  color: #34d399;
 }
 
 /* ===== Packages ===== */

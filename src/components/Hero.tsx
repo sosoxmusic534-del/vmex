@@ -1,6 +1,30 @@
 import { useMemo } from "react";
 import DottedMap from "dotted-map";
 
+const ChipIcon = {
+  vmess: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+  ),
+  vless: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z" />
+    </svg>
+  ),
+  trojan: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  ),
+  ping: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+      <path d="M5 20v-3M10 20v-7M15 20v-11M20 20V5" />
+    </svg>
+  ),
+};
+
 export default function Hero() {
   const mapSrc = useMemo(() => {
     const map = new DottedMap({ height: 70, grid: "diagonal" });
@@ -69,15 +93,18 @@ export default function Hero() {
         </div>
 
         <div className="hero-chips">
-          {["VMess", "VLESS", "Trojan", "25ms Ping"].map((chip, i) => (
-            <span
-              key={chip}
-              className="hero-anim"
-              style={{ "--h": `${1.95 + i * 0.08}s` } as React.CSSProperties}
-            >
-              {chip}
-            </span>
-          ))}
+          <span className="hero-anim hero-chip" style={{ "--h": "1.95s" } as React.CSSProperties}>
+            <span className="hero-chip-icon">{ChipIcon.vmess}</span>VMess
+          </span>
+          <span className="hero-anim hero-chip" style={{ "--h": "2.03s" } as React.CSSProperties}>
+            <span className="hero-chip-icon">{ChipIcon.vless}</span>VLESS
+          </span>
+          <span className="hero-anim hero-chip" style={{ "--h": "2.11s" } as React.CSSProperties}>
+            <span className="hero-chip-icon">{ChipIcon.trojan}</span>Trojan
+          </span>
+          <span className="hero-anim hero-chip hero-chip-ping" style={{ "--h": "2.19s" } as React.CSSProperties}>
+            <span className="hero-chip-icon">{ChipIcon.ping}</span>25ms Ping
+          </span>
         </div>
       </div>
     </section>
