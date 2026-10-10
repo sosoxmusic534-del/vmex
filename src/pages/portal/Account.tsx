@@ -1,4 +1,4 @@
-import { useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { api, apiUpload } from "../../lib/api";
 import { useFetch } from "../../lib/useFetch";
@@ -107,6 +107,16 @@ export default function Account() {
     topups.reload();
     refresh();
   };
+
+  const hasPendingTopups = topups.data?.topups.some((item) => item.status === "pending") ?? false;
+  useEffect(() => {
+    if (!hasPendingTopups) return;
+    const timer = window.setInterval(() => {
+      credit.reload();
+      topups.reload();
+    }, 30_000);
+    return () => window.clearInterval(timer);
+  }, [hasPendingTopups, credit.reload, topups.reload]);
 
   if (account.error) return <ErrorBox message={account.error} onRetry={account.reload} />;
   if (account.loading && !account.data) return <PageSkeleton />;

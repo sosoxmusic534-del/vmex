@@ -265,7 +265,7 @@ export function giftPage(req, res, next) {
     color = GIFT_DESIGNS[v.design][3];
     image = `${base}/api/gifts/og/${g.claim_token}.png?v=${v.status}`;
     large = true;
-    title = `🎁 ${lkr(v.amount)} VMEX Gift Card${v.toName ? ` for ${v.toName}` : ""}`;
+    title = `${lkr(v.amount)} VMEX Gift Card${v.toName ? ` for ${v.toName}` : ""}`;
     desc =
       v.status === "available"
         ? `${v.fromName || "Someone"} sent you a VMEX gift card. Tap to claim it and get fast, private V2Ray.`

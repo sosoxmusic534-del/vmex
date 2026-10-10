@@ -31,7 +31,7 @@ r.get("/claim/:token", (req, res) => {
 r.post("/claim/:token", requireAuth, claimLimiter, (req, res) => {
   const amount = claimByToken(req.user.id, req.params.token);
   notify({
-    title: "🎁 Gift card claimed",
+    title: "Gift card claimed",
     fields: [
       { name: "User", value: `${req.user.name} (${req.user.email})` },
       { name: "Amount", value: `LKR ${amount.toLocaleString("en-US")}` },

@@ -8,14 +8,7 @@ import { I, Notice, Spinner, errMsg, toast } from "./ui";
 type DiscordInfo = {
   available: boolean;
   linked: boolean;
-  discord: {
-    id: string;
-    username: string;
-    avatarUrl: string;
-    showing: string | null;
-    linkedAt: string;
-    presence: { enabled: boolean; live: boolean; text: string | null };
-  } | null;
+  discord: { id: string; username: string; avatarUrl: string; showing: string | null; linkedAt: string } | null;
 };
 
 const discordLogo = (
@@ -31,13 +24,14 @@ export default function DiscordLinkCard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const p = new URLSearchParams(search).get("discord");
+    const params = new URLSearchParams(search);
+    const p = params.get("discord");
     if (!p) return;
     if (p === "link") {
       window.location.href = "/api/discord/link";
       return;
     }
-    const reason = new URLSearchParams(search).get("reason");
+    const reason = params.get("reason");
     if (p === "linked") toast("Discord connected!");
     if (p === "error") toast(`Discord error: ${reason ?? "please try again"}`, "error");
     if (p === "cancelled") toast("You cancelled the Discord approval", "error");
@@ -45,10 +39,6 @@ export default function DiscordLinkCard() {
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
-
-  const go = (presence = false) => {
-    window.location.href = `/api/discord/link${presence ? "?presence=1" : ""}`;
-  };
 
   const sync = async () => {
     setBusy(true);
@@ -60,16 +50,6 @@ export default function DiscordLinkCard() {
       toast(errMsg(e), "error");
     } finally {
       setBusy(false);
-    }
-  };
-
-  const statusOff = async () => {
-    try {
-      await api("/discord/presence/off", { method: "POST" });
-      toast("Discord status turned off");
-      reload();
-    } catch (e) {
-      toast(errMsg(e), "error");
     }
   };
 
@@ -91,7 +71,7 @@ export default function DiscordLinkCard() {
       <div className="dash-card-head">
         <div>
           <h3 className="dash-h3"><span className="dl-mark">{discordLogo}</span> Discord</h3>
-          <p className="dash-muted">Show your VMEX status on Discord and get customer roles automatically.</p>
+          <p className="dash-muted">Show VMEX on your Discord profile and get customer roles automatically.</p>
         </div>
         {data?.linked && <span className="conn ok"><i /> Connected</span>}
       </div>
@@ -110,7 +90,6 @@ export default function DiscordLinkCard() {
                 <small>Linked {formatDate(d.linkedAt)}</small>
               </div>
             </div>
-
             <div className="dl-preview">
               <small>PROFILE CONNECTION</small>
               <div className="dl-conn">
@@ -123,35 +102,6 @@ export default function DiscordLinkCard() {
               </div>
             </div>
           </div>
-
-          {/* Discord status (Playing VMEX) */}
-          <div className="dl-status">
-            <div className="dl-status-head">
-              <div>
-                <b>Discord status: "Playing VMEX"</b>
-                <span>
-                  {d.presence.enabled
-                    ? d.presence.live
-                      ? `Live now · ${d.presence.text ?? "Connected to VMEX"}`
-                      : "On · appears when you connect to VMEX"
-                    : "Off"}
-                </span>
-              </div>
-              {d.presence.enabled ? (
-                <button type="button" className="dash-btn sm" onClick={statusOff}>Turn off</button>
-              ) : (
-                <button type="button" className="dl-btn sm" onClick={() => go(true)}>{discordLogo} Enable</button>
-              )}
-            </div>
-
-            {!d.presence.enabled && (
-              <p className="dl-note">
-                {I.info} Discord will ask for extra permissions (including your friends list) because it bundles them
-                together. VMEX only uses it to set your "Playing VMEX" status, and you can turn it off any time.
-              </p>
-            )}
-          </div>
-
           <div className="form-actions">
             <button type="button" className="dash-btn sm" onClick={sync} disabled={busy}>
               {busy ? <Spinner /> : <>{I.refresh} Update now</>}
@@ -164,9 +114,11 @@ export default function DiscordLinkCard() {
           <ul>
             <li>{I.check} Your profile shows <b>VMEX · your plan</b> with a ✔</li>
             <li>{I.check} Get the <b>VMEX Customer</b> role in our server automatically</li>
-            <li>{I.check} Optional <b>"Playing VMEX"</b> status — nothing to download</li>
+            <li>{I.check} Want "Playing VMEX"? Use the VMEX desktop app</li>
           </ul>
-          <button type="button" className="dl-btn" onClick={() => go(false)}>{discordLogo} Connect Discord</button>
+          <button type="button" className="dl-btn" onClick={() => (window.location.href = "/api/discord/link")}>
+            {discordLogo} Connect Discord
+          </button>
         </div>
       )}
     </div>

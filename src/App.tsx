@@ -10,6 +10,7 @@ import PortalDashboard from "./pages/portal/Dashboard";
 import Services from "./pages/portal/Services";
 import Configs from "./pages/portal/Configs";
 import Store from "./pages/portal/Store";
+import Gifts from "./pages/portal/Gifts.tsx";
 import Invoices from "./pages/portal/Invoices.tsx";
 import Support from "./pages/portal/Support";
 import Account from "./pages/portal/Account";
@@ -25,6 +26,7 @@ import AdminPayments from "./pages/admin/Payments";
 import AdminTickets from "./pages/admin/Tickets";
 import AdminSettings from "./pages/admin/Settings";
 
+import GiftClaim from "./pages/GiftClaim";
 import Background from "./components/layout/Background";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
@@ -103,6 +105,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/gift/:token" element={<GiftClaim />} />
           <Route path="/refund" element={<Refund />} />
           <Route path="/about" element={<About />} />
           <Route path="/fair-use" element={<Home />} />
@@ -115,6 +118,7 @@ export default function App() {
             <Route path="services" element={<Services />} />
             <Route path="configs" element={<Configs />} />
             <Route path="store" element={<Store />} />
+            <Route path="gifts" element={<Gifts />} />
             <Route path="invoices" element={<Invoices />} />
             <Route path="account" element={<Account />} />
             <Route path="support" element={<Support />} />

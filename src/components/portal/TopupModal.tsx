@@ -96,6 +96,7 @@ export default function TopupModal({ onClose, onDone }: { onClose: () => void; o
               {!validAmount && <p className="receipt-err">Amount must be between LKR 100 and LKR 100,000.</p>}
 
               <h3 style={{ marginTop: 24 }}>Pay with</h3>
+              <p className="dash-muted">Top-up credit is added after your payment is verified by staff.</p>
               {methods.length ? <div className="pay-grid" style={{ marginTop: 0 }}>
                 {methods.map((item) => (
                   <button key={item.id} type="button" disabled={item.status !== "active"}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { api } from "./api";
 
 export function useFetch<T>(path: string) {
@@ -23,5 +23,6 @@ export function useFetch<T>(path: string) {
     };
   }, [path, tick]);
 
-  return { data, error, loading, reload: () => setTick((t) => t + 1) };
+  const reload = useCallback(() => setTick((t) => t + 1), []);
+  return { data, error, loading, reload };
 }

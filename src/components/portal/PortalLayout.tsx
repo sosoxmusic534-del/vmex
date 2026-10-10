@@ -4,6 +4,7 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import { useAuth } from "../../context/AuthContext";
 import { formatLKR } from "../../lib/format";
 import UserAvatar from "./UserAvatar";
+import GiftIcon from "../GiftIcon";
 import { I, Toaster } from "./ui";
 
 const STATUS_URL = "https://status.vmex.net";
@@ -14,6 +15,7 @@ type Panel = "admin" | "settings" | null;
 const mainNav: Item[] = [
   { to: "/portal", label: "Dashboard", icon: I.grid, end: true },
   { to: "/portal/store", label: "Plans", icon: I.store },
+  { to: "/portal/gifts", label: "Gift cards", icon: <GiftIcon /> },
   { to: "/portal/services", label: "Services", icon: I.box },
   { to: "/portal/configs", label: "Configs", icon: I.sliders },
   { to: "/portal/invoices", label: "Invoices", icon: I.file, hideSm: true },
