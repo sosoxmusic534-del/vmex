@@ -257,12 +257,12 @@ export function giftPage(req, res, next) {
   let title = "VMEX Gift Card";
   let desc = "This gift link isn't valid.";
   let image = `${base}/logo.png`;
-  let color = "#2f7bff";
+  let color = "#5ab4ff";
   let large = false;
 
   if (g) {
     const v = giftView(g);
-    color = GIFT_DESIGNS[v.design][3];
+    color = "#5ab4ff";
     image = `${base}/api/gifts/og/${g.claim_token}.png?v=${v.status}`;
     large = true;
     title = `${lkr(v.amount)} VMEX Gift Card${v.toName ? ` for ${v.toName}` : ""}`;
