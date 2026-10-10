@@ -7,6 +7,9 @@ import GiftIcon from "../components/GiftIcon";
 import { gapi, lkr, refreshUser } from "../lib/gifts";
 import type { GiftView } from "../lib/gifts";
 
+const LOADING_STEPS = ["Finding your gift…", "Wrapping it up…", "Adding the bow…", "Your gift is ready"];
+const MIN_LOADING_MS = 1800;
+
 export default function GiftClaim() {
   const { token = "" } = useParams();
   const auth = useAuth();
@@ -18,7 +21,10 @@ export default function GiftClaim() {
   const [opened, setOpened] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [claimed, setClaimed] = useState<number | null>(null);
+  const [minDone, setMinDone] = useState(false);
+  const [step, setStep] = useState(0);
 
+  // Load the gift
   useEffect(() => {
     gapi<{ gift: GiftView }>(`/gifts/claim/${encodeURIComponent(token)}`)
       .then((r) => {
@@ -29,6 +35,17 @@ export default function GiftClaim() {
       .catch((e: Error) => setError(e.message));
   }, [token]);
 
+  // Loading screen timing + changing text
+  useEffect(() => {
+    const done = setTimeout(() => setMinDone(true), MIN_LOADING_MS);
+    const tick = setInterval(() => setStep((s) => Math.min(s + 1, LOADING_STEPS.length - 1)), MIN_LOADING_MS / LOADING_STEPS.length);
+    return () => {
+      clearTimeout(done);
+      clearInterval(tick);
+    };
+  }, []);
+
+  const loading = !minDone || (!gift && !error);
   const back = { from: `/gift/${token}` };
 
   const claim = async () => {
@@ -65,24 +82,35 @@ export default function GiftClaim() {
       </header>
 
       <main className="gfc-main">
-        {!gift && !error && <div className="gfc-loading"><span /> Opening your gift…</div>}
-
-        {!gift && error && (
+        {loading ? (
+          <div className="gfc-loader" role="status" aria-live="polite">
+            <div className="gfc-loader-box">
+              <span className="gfc-loader-ring" />
+              <GiftIcon className="gfc-loader-icon" />
+            </div>
+            <p key={step} className="gfc-loader-text">{LOADING_STEPS[step]}</p>
+            <div className="gfc-loader-bar"><span /></div>
+          </div>
+        ) : !gift ? (
           <div className="gfc-missing">
             <GiftIcon className="gfc-missing-icon" />
             <h1 className="gfc-title">Gift not found</h1>
             <p className="gfc-small">{error}</p>
             <Link to="/" className="gfc-btn">Go to VMEX</Link>
           </div>
-        )}
-
-        {gift && (
+        ) : (
           <>
             <span className="gfc-kicker">
               <GiftIcon /> {gift.fromName ? `${gift.fromName} sent you a gift` : "You've received a gift"}
             </span>
             <h1 className="gfc-title">
-              {claimed !== null ? <>It's <em>yours</em></> : opened ? <><em>{lkr(gift.amount)}</em> of fast internet</> : <>Something's <em>waiting</em> for you</>}
+              {claimed !== null ? (
+                <>It's <em>yours</em></>
+              ) : opened ? (
+                <><em>{lkr(gift.amount)}</em> of fast internet</>
+              ) : (
+                <>Something's <em>waiting</em> for you</>
+              )}
             </h1>
 
             <div className={`gfc-stage${opened ? " is-open" : ""}`}>
