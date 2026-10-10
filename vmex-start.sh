@@ -2,7 +2,8 @@
 # =========================================================
 #  VMEX start script for Pterodactyl
 #  Pulls code → installs packages → SQLite engine →
-#  builds site → Cloudflare Tunnel → starts the backend
+#  checks settings → builds site → Cloudflare Tunnel →
+#  starts the backend (website + API + Discord bot)
 # =========================================================
 cd /home/container || exit 1
 
@@ -61,13 +62,35 @@ if [ ! -f "$SQLITE_BIN" ]; then
   echo "✔ better-sqlite3 engine ready"
 fi
 
-# ---------- 5. Build the website ----------
+# ---------- 5. Discord bot settings check (warnings only) ----------
+env_has () {
+  grep -Eq "^[[:space:]]*$1=[^[:space:]]" server/.env
+}
+
+echo "▶ Checking Discord settings..."
+DISCORD_OK=1
+for key in DISCORD_BOT_TOKEN DISCORD_CLIENT_ID DISCORD_CLIENT_SECRET PUBLIC_URL; do
+  if ! env_has "$key"; then
+    echo "  ! $key is missing — the Discord bot and account linking are off"
+    DISCORD_OK=0
+  fi
+done
+if [ "$DISCORD_OK" = "1" ]; then
+  echo "  ✔ Discord bot will start with the website"
+  if env_has DISCORD_GUILD_ID && env_has DISCORD_PLAN_ROLES; then
+    echo "  ✔ Plan roles are set up"
+  else
+    echo "  ! DISCORD_GUILD_ID or DISCORD_PLAN_ROLES missing — plan roles are off"
+  fi
+fi
+
+# ---------- 6. Build the website ----------
 if [ "${BUILD_ON_START}" = "1" ] || [ ! -d dist ]; then
   echo "▶ Building the website..."
   npx vite build || { echo "✖ Website build failed"; exit 1; }
 fi
 
-# ---------- 6. Cloudflare Tunnel ----------
+# ---------- 7. Cloudflare Tunnel ----------
 CF_PID=""
 if [ -n "${CF_TUNNEL_TOKEN}" ]; then
   if [ ! -x ./cloudflared ]; then
@@ -84,7 +107,7 @@ else
   echo "! CF_TUNNEL_TOKEN is empty — running without Cloudflare Tunnel"
 fi
 
-# ---------- 7. Start the backend ----------
+# ---------- 8. Start the backend (website + API + Discord bot) ----------
 NODE_PID=""
 
 cleanup () {
