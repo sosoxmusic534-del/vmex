@@ -113,8 +113,8 @@ export default function DiscordLinkCard() {
         <div className="dl-empty">
           <ul>
             <li>{I.check} Your profile shows <b>VMEX · your plan</b> with a ✔</li>
-            <li>{I.check} Get the <b>VMEX Customer</b> role in our server automatically</li>
-            <li>{I.check} Want "Playing VMEX"? Use the VMEX desktop app</li>
+            <li>{I.check} Get your active plan role in our server automatically</li>
+            <li>{I.check} The VMEX bot shares rotating service status in Discord</li>
           </ul>
           <button type="button" className="dl-btn" onClick={() => (window.location.href = "/api/discord/link")}>
             {discordLogo} Connect Discord

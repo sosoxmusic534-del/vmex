@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import TrialBanner from "../../components/portal/TrialBanner";
 import { avatarUrl } from "../../lib/avatar";
 import { useFetch } from "../../lib/useFetch";
 import { daysLeft, formatBytes, formatDate, formatLKR } from "../../lib/format";
@@ -41,6 +42,8 @@ export default function Dashboard() {
   const filledSeg = Math.round((pct / 100) * segments);
 
   return (
+    <>
+    <TrialBanner />
     <div className="px-grid">
       <div className="px-col">
         <div className="px-head">
@@ -277,5 +280,6 @@ export default function Dashboard() {
         </div>
       </div>
     </div>
+    </>
   );
 }

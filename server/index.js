@@ -1,8 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
+import { startBot } from "./bot.js";
 import { fileURLToPath } from "node:url";
 import express from "express";
 import cookieParser from "cookie-parser";
+import trialRoutes from "./routes/trial.js";
 import avatarRoutes from "./routes/avatar.js";
 import authRoutes from "./routes/auth.js";
 import accountRoutes from "./routes/account.js";
@@ -36,6 +38,7 @@ app.use("/api/files", filesRoutes);
 app.use("/api/me", avatarRoutes);
 app.use("/api/gifts", giftRoutes);
 app.get("/gift/:token", giftPage);
+app.use("/api/trial", trialRoutes);
 
 /* ---------- robots.txt & sitemap.xml (per domain) ---------- */
 const LIVE_HOSTS = ["vmex.net", "www.vmex.net"];
@@ -105,4 +108,5 @@ app.use((err, _req, res, _next) => {
 app.listen(PORT, () => {
   console.log(`VMEX API running on http://localhost:${PORT}`);
   startDiscordSync();
+  startBot();
 });

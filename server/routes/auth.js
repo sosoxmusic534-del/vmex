@@ -6,6 +6,7 @@ import { publicUser, setAuthCookie, clearAuthCookie, requireAuth } from "../auth
 import { HttpError } from "../errors.js";
 import { createChallenge, refreshChallenge, verifyChallenge } from "../otp.js";
 import { sendOtpEmail } from "../mailer.js";
+import { registerGuard } from "../ipguard.js";
 
 /* Discord logs are optional — works even if discord.js doesn't exist */
 let notify = () => {};
@@ -64,7 +65,7 @@ async function sendCode(res, user, purpose, status = 200) {
 }
 
 /* ---------- Register → always needs a code ---------- */
-r.post("/register", limiter, async (req, res) => {
+r.post("/register", registerGuard, limiter, async (req, res) => {
   const name = String(req.body?.name ?? "").trim();
   const email = String(req.body?.email ?? "").trim().toLowerCase();
   const password = String(req.body?.password ?? "");

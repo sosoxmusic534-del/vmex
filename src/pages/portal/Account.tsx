@@ -109,14 +109,16 @@ export default function Account() {
   };
 
   const hasPendingTopups = topups.data?.topups.some((item) => item.status === "pending") ?? false;
+  const reloadCredit = credit.reload;
+  const reloadTopups = topups.reload;
   useEffect(() => {
     if (!hasPendingTopups) return;
     const timer = window.setInterval(() => {
-      credit.reload();
-      topups.reload();
+      reloadCredit();
+      reloadTopups();
     }, 30_000);
     return () => window.clearInterval(timer);
-  }, [hasPendingTopups, credit.reload, topups.reload]);
+  }, [hasPendingTopups, reloadCredit, reloadTopups]);
 
   if (account.error) return <ErrorBox message={account.error} onRetry={account.reload} />;
   if (account.loading && !account.data) return <PageSkeleton />;

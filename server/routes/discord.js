@@ -5,7 +5,7 @@ import { HttpError } from "../errors.js";
 import { getOnlineEmails } from "../xui.js";
 import {
   authorizeUrl, avatarUrl, discordConfigured, exchangeCode, getDiscordUser,
-  getLink, removeLink, saveLink, syncUser,
+  getLink, removeLink, saveLink, syncMemberRoles, syncUser,
 } from "../discord-link.js";
 
 let notify = () => {};
@@ -51,9 +51,14 @@ r.get("/callback", requireAuth, async (req, res) => {
     const tokens = await exchangeCode(String(req.query.code || ""));
     const discordUser = await getDiscordUser(tokens.access_token);
     saveLink(req.user.id, discordUser, tokens);
-    await syncUser(req.user.id, await onlineList(), true).catch((e) => console.error("[discord] roles:", e.message));
+
+    await syncUser(req.user.id, await onlineList(), true)
+      .catch((e) => console.error("[discord] profile:", e.message));
+    await syncMemberRoles(req.user.id, true)
+      .catch((e) => console.error("[discord] server roles:", e.message));
+
     notify({
-      title: "🔗 Discord linked",
+      title: "Discord linked",
       fields: [
         { name: "VMEX user", value: `${req.user.name} (${req.user.email})` },
         { name: "Discord", value: `${discordUser.username} (${discordUser.id})` },
@@ -87,6 +92,8 @@ r.post("/sync", requireAuth, async (req, res) => {
   if (!getLink(req.user.id)) throw new HttpError(400, "Connect your Discord first.");
   try {
     const body = await syncUser(req.user.id, await onlineList(), true);
+    await syncMemberRoles(req.user.id, true)
+      .catch((e) => console.error("[discord] server roles:", e.message));
     res.json({ showing: body?.platform_username ?? null });
   } catch (e) {
     console.error("[discord] manual sync:", e.message);
@@ -94,8 +101,8 @@ r.post("/sync", requireAuth, async (req, res) => {
   }
 });
 
-r.delete("/link", requireAuth, (req, res) => {
-  removeLink(req.user.id);
+r.delete("/link", requireAuth, async (req, res) => {
+  await removeLink(req.user.id);
   res.json({ ok: true });
 });
 
