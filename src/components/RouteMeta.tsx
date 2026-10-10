@@ -37,8 +37,12 @@ export default function RouteMeta() {
 
   useEffect(() => {
     const isPortal = pathname.startsWith("/portal");
+    const isGiftClaim = pathname.startsWith("/gift/");
+    const isNotFound = !pages[pathname] && !isPortal && !isGiftClaim;
     const meta: Meta =
-      pages[pathname] ?? (isPortal ? { title: "Client Portal — VMEX", index: false } : pages["/"]);
+      pages[pathname] ?? (isNotFound
+        ? { title: "Page not found · VMEX", index: false }
+        : isPortal ? { title: "Client Portal — VMEX", index: false } : pages["/"]);
 
     const description = meta.description ?? DEFAULT_DESC;
     const url = SITE + (pages[pathname] ? pathname : "/");
@@ -49,7 +53,7 @@ export default function RouteMeta() {
     setMeta(
       'meta[name="robots"]',
       "content",
-      !isLive || meta.index === false || isPortal ? "noindex, nofollow" : "index, follow"
+      !isLive || meta.index === false || isPortal || isNotFound ? "noindex, nofollow" : "index, follow"
     );
     setMeta('meta[property="og:title"]', "content", meta.title);
     setMeta('meta[property="og:description"]', "content", description);

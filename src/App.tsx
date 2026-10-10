@@ -27,6 +27,7 @@ import AdminTickets from "./pages/admin/Tickets";
 import AdminSettings from "./pages/admin/Settings";
 
 import GiftClaim from "./pages/GiftClaim";
+import NotFound from "./pages/NotFound";
 import Background from "./components/layout/Background";
 import Navbar from "./components/Navbar";
 import Hero from "./components/Hero";
@@ -72,7 +73,7 @@ function Home() {
 export default function App() {
   const [loaded, setLoaded] = useState(false);
   const { pathname } = useLocation();
-  const isPortal = pathname.startsWith("/portal");
+  const isPortal = pathname.startsWith("/portal") || pathname.startsWith("/gift/");
 
   useEffect(() => {
     const minTime = new Promise((r) => setTimeout(r, 1800));
@@ -143,7 +144,7 @@ export default function App() {
             </Route>
           </Route>
 
-          <Route path="*" element={<Home />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
 
