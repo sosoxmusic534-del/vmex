@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Lenis from "lenis";
 import type { CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
@@ -23,6 +24,28 @@ export default function GiftClaim() {
   const [claimed, setClaimed] = useState<number | null>(null);
   const [minDone, setMinDone] = useState(false);
   const [step, setStep] = useState(0);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // Own smooth scroll; the site's Lenis cannot reach inside this full-screen page.
+  useEffect(() => {
+    const wrapper = scrollRef.current;
+    const content = contentRef.current;
+    if (!wrapper || !content) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const lenis = new Lenis({ wrapper, content, lerp: 0.1, smoothWheel: true });
+    let frame = 0;
+    const raf = (time: number) => {
+      lenis.raf(time);
+      frame = requestAnimationFrame(raf);
+    };
+    frame = requestAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(frame);
+      lenis.destroy();
+    };
+  }, []);
 
   // Load the gift
   useEffect(() => {
@@ -69,9 +92,10 @@ export default function GiftClaim() {
   const status = claimed !== null ? "claimed" : gift?.status ?? "available";
 
   return (
-    <div className="gfc">
+    <div className="gfc" ref={scrollRef} data-lenis-prevent>
       <div className="gfc-bg" aria-hidden="true"><span /><span /><span /></div>
 
+      <div className="gfc-scroll" ref={contentRef}>
       <header className="gfc-top">
         <Link to="/" className="gfc-brand"><img src="/logo.png" alt="" />VMEX</Link>
         {user ? (
@@ -175,6 +199,7 @@ export default function GiftClaim() {
       </main>
 
       <footer className="gfc-foot">VMEX · Fast, private V2Ray</footer>
+      </div>
     </div>
   );
 }

@@ -8570,6 +8570,18 @@ textarea.gft-input { resize: vertical; min-height: 84px; }
   overflow-y: auto;
 }
 
+/* Gift page: isolated Lenis scrolling */
+.gfc { display: block; }
+.gfc-scroll {
+  position: relative;
+  z-index: 1;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.gfc-bg { position: fixed; inset: 0; pointer-events: none; }
+.gfc::before { position: fixed; }
+
 /* ===== Gift page: loading screen ===== */
 .gfc-loader { display: flex; flex-direction: column; align-items: center; gap: 22px; }
 .gfc-loader-box {
