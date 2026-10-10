@@ -14,6 +14,8 @@ import discordRoutes from "./routes/discord.js";
 import { HttpError } from "./provision.js";
 import { XuiError } from "./xui.js";
 import { startDiscordSync } from "./discord-link.js";
+import giftRoutes from "./routes/gifts.js";
+import { giftPage } from "./gifts.js";
 
 const PORT = process.env.PORT || 4000;
 const app = express();
@@ -32,6 +34,8 @@ app.use("/api/admin/tickets", adminTickets);
 app.use("/api/admin", adminRoutes);
 app.use("/api/files", filesRoutes);
 app.use("/api/me", avatarRoutes);
+app.use("/api/gifts", giftRoutes);
+app.get("/gift/:token", giftPage);
 
 /* ---------- robots.txt & sitemap.xml (per domain) ---------- */
 const LIVE_HOSTS = ["vmex.net", "www.vmex.net"];
