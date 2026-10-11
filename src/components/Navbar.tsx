@@ -8,6 +8,7 @@ const links: NavLink[] = [
   { label: "About Us", to: "/about" },
   { label: "How It Works", to: "/#how-it-works" },
   { label: "Pricing", to: "/#pricing" },
+  { label: "Download", to: "/#download" },
   { label: "FAQ", to: "/#faq" },
 ];
 

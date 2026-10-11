@@ -36,6 +36,7 @@ import Delivery from "./components/Delivery";
 import Guide from "./components/Guide";
 import Packages from "./components/Packages";
 import Plans from "./components/Plans";
+import DownloadApp from "./components/DownloadApp";
 import Team from "./components/Team";
 import Faq from "./components/Faq";
 import Cta from "./components/Cta";
@@ -63,6 +64,7 @@ function Home() {
       <Guide />
       <Packages />
       <Plans />
+      <DownloadApp />
       <Team />
       <Faq />
       <Cta />
