@@ -1,0 +1,88 @@
+/* Hide the normal cursor only when the custom one is active */
+.has-custom-cursor,
+.has-custom-cursor * {
+  cursor: none !important;
+}
+
+/* Keep the normal text cursor in inputs */
+.has-custom-cursor input:not([type="submit"]):not([type="checkbox"]):not([type="radio"]),
+.has-custom-cursor textarea,
+.has-custom-cursor [contenteditable="true"] {
+  cursor: text !important;
+}
+
+.cc-dot,
+.cc-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 99999;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform;
+}
+
+.cc-dot.is-visible,
+.cc-ring.is-visible {
+  opacity: 1;
+}
+
+/* Small solid dot */
+.cc-dot::before {
+  content: "";
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  margin: -4px 0 0 -4px;
+  border-radius: 50%;
+  background: #2f7bff;
+  box-shadow: 0 0 10px rgba(47, 123, 255, 0.8);
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.cc-dot.is-hover::before {
+  transform: scale(0.5);
+}
+
+.cc-dot.is-text::before {
+  opacity: 0;
+}
+
+/* Trailing ring */
+.cc-ring::before {
+  content: "";
+  position: absolute;
+  width: 36px;
+  height: 36px;
+  margin: -18px 0 0 -18px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(47, 123, 255, 0.55);
+  background: rgba(47, 123, 255, 0.04);
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.25s ease, border-color 0.25s ease,
+    opacity 0.2s ease;
+}
+
+.cc-ring.is-hover::before {
+  transform: scale(1.6);
+  background: rgba(47, 123, 255, 0.12);
+  border-color: rgba(56, 189, 248, 0.8);
+}
+
+.cc-ring.is-down::before {
+  transform: scale(0.8);
+}
+
+.cc-ring.is-hover.is-down::before {
+  transform: scale(1.3);
+}
+
+.cc-ring.is-text::before {
+  opacity: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cc-dot::before,
+  .cc-ring::before {
+    transition: none;
+  }
+}

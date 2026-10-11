@@ -52,6 +52,7 @@ import About from "./pages/About";
 
 import useSmoothScroll from "./hooks/useSmoothScroll";
 import useScrollReveal from "./hooks/useScrollReveal";
+import CustomCursor from "./components/CustomCursor";
 import "./App.css";
 import "./portal-rail.css";
 
@@ -95,6 +96,7 @@ export default function App() {
 
   return (
     <div className={`app ${loaded ? "is-loaded" : ""}`}>
+      <CustomCursor />
       <Background />
       <Preloader done={loaded} />
       <PortalTransition />
